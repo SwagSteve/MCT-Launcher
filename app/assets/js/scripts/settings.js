@@ -325,8 +325,12 @@ function fullSettingsSave() {
     saveSettingsValues()
     saveModConfiguration()
     ConfigManager.save()
-    saveDropinModConfiguration()
-    saveShaderpackSettings()
+    if(DROPIN_MODS_UI_ENABLED){
+        saveDropinModConfiguration()
+    }
+    if(SHADERPACK_UI_ENABLED){
+        saveShaderpackSettings()
+    }
 }
 
 /* Closes the settings view and saves all data. */
@@ -463,7 +467,9 @@ function bindAuthAccountSelect(){
             }
             val.setAttribute('selected', '')
             val.innerHTML = Lang.queryJS('settings.authAccountSelect.selectedButton')
-            setSelectedAccount(val.closest('.settingsAuthAccount').getAttribute('uuid'))
+            const uuid = val.closest('.settingsAuthAccount').getAttribute('uuid')
+            setSelectedAccount(uuid)
+            refreshAuthAccountSelected(uuid)
         }
     })
 }
@@ -607,9 +613,13 @@ function refreshAuthAccountSelected(uuid){
     Array.from(document.getElementsByClassName('settingsAuthAccount')).map((val) => {
         const selBtn = val.getElementsByClassName('settingsAuthAccountSelect')[0]
         if(uuid === val.getAttribute('uuid')){
+            val.setAttribute('selectedaccount', '')
             selBtn.setAttribute('selected', '')
             selBtn.innerHTML = Lang.queryJS('settings.authAccountSelect.selectedButton')
         } else {
+            if(val.hasAttribute('selectedaccount')){
+                val.removeAttribute('selectedaccount')
+            }
             if(selBtn.hasAttribute('selected')){
                 selBtn.removeAttribute('selected')
             }
@@ -638,9 +648,9 @@ function populateAuthAccounts(){
     authKeys.forEach((val) => {
         const acc = authAccounts[val]
 
-        const accHtml = `<div class="settingsAuthAccount" uuid="${acc.uuid}">
+        const accHtml = `<div class="settingsAuthAccount" uuid="${acc.uuid}" ${selectedUUID === acc.uuid ? 'selectedaccount' : ''}>
             <div class="settingsAuthAccountLeft">
-                <img class="settingsAuthAccountImage" alt="${acc.displayName}" src="https://mc-heads.net/body/${acc.uuid}/60">
+                <img class="settingsAuthAccountImage" alt="${acc.displayName}" src="https://starlightskins.lunareclipse.studio/render/sleeping/${acc.uuid}/full">
             </div>
             <div class="settingsAuthAccountRight">
                 <div class="settingsAuthAccountDetails">
@@ -656,7 +666,7 @@ function populateAuthAccounts(){
                 <div class="settingsAuthAccountActions">
                     <button class="settingsAuthAccountSelect" ${selectedUUID === acc.uuid ? 'selected>' + Lang.queryJS('settings.authAccountPopulate.selectedAccount') : '>' + Lang.queryJS('settings.authAccountPopulate.selectAccount')}</button>
                     <div class="settingsAuthAccountWrapper">
-                        <button class="settingsAuthAccountLogOut">${Lang.queryJS('settings.authAccountPopulate.logout')}</button>
+                        <button class="settingsAuthAccountLogOut" title="${Lang.queryJS('settings.authAccountPopulate.logout')}" aria-label="${Lang.queryJS('settings.authAccountPopulate.logout')}"><svg class="settingsAuthAccountTrashIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>
                     </div>
                 </div>
             </div>
@@ -707,6 +717,12 @@ document.getElementById('settingsGameHeight').addEventListener('keydown', (e) =>
 
 const settingsModsContainer = document.getElementById('settingsModsContainer')
 
+// UI feature flags (some sections may be removed for custom launchers).
+// MCT: UI sections disabled by design.
+const DROPIN_MODS_UI_ENABLED = false
+const SHADERPACK_UI_ENABLED = false
+
+
 /**
  * Resolve and update the mods on the UI.
  */
@@ -719,7 +735,13 @@ async function resolveModsForUI(){
     const modStr = parseModulesForUI(distro.getServerById(serv).modules, false, servConf.mods)
 
     document.getElementById('settingsReqModsContent').innerHTML = modStr.reqMods
-    document.getElementById('settingsOptModsContent').innerHTML = modStr.optMods
+
+    // Optional mods may be hidden/removed for some custom UIs.
+    // Only update the container if it exists.
+    const optModsEl = document.getElementById('settingsOptModsContent')
+    if(optModsEl != null){
+        optModsEl.innerHTML = modStr.optMods
+    }
 }
 
 /**
@@ -773,10 +795,7 @@ function parseModulesForUI(mdls, submodules, servConf){
                                 <span class="settingsModVersion">v${mdl.mavenComponents.version}</span>
                             </div>
                         </div>
-                        <label class="toggleSwitch">
-                            <input type="checkbox" formod="${mdl.getVersionlessMavenIdentifier()}" ${val ? 'checked' : ''}>
-                            <span class="toggleSwitchSlider"></span>
-                        </label>
+                        <span class="settingsModRequired">Required</span>
                     </div>
                     ${mdl.subModules.length > 0 ? `<div class="settingsSubModContainer">
                         ${Object.values(parseModulesForUI(mdl.subModules, true, conf.mods)).join('')}
@@ -856,6 +875,7 @@ let CACHE_DROPIN_MODS
  * populate the results onto the UI.
  */
 async function resolveDropinModsForUI(){
+    if(!DROPIN_MODS_UI_ENABLED) return
     const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
     CACHE_SETTINGS_MODS_DIR = path.join(ConfigManager.getInstanceDirectory(), serv.rawServer.id, 'mods')
     CACHE_DROPIN_MODS = DropinModUtil.scanForDropinMods(CACHE_SETTINGS_MODS_DIR, serv.rawServer.minecraftVersion)
@@ -874,21 +894,22 @@ async function resolveDropinModsForUI(){
                                 </div>
                             </div>
                         </div>
-                        <label class="toggleSwitch">
-                            <input type="checkbox" formod="${dropin.fullName}" dropin ${!dropin.disabled ? 'checked' : ''}>
-                            <span class="toggleSwitchSlider"></span>
-                        </label>
+                        <span class="settingsModRequired">Required</span>
                     </div>
                 </div>`
     }
 
-    document.getElementById('settingsDropinModsContent').innerHTML = dropinMods
+    const dropinModsEl = document.getElementById('settingsDropinModsContent')
+    if(dropinModsEl != null){
+        dropinModsEl.innerHTML = dropinMods
+    }
 }
 
 /**
  * Bind the remove button for each loaded drop-in mod.
  */
 function bindDropinModsRemoveButton(){
+    if(!DROPIN_MODS_UI_ENABLED) return
     const sEls = settingsModsContainer.querySelectorAll('[remmod]')
     Array.from(sEls).map((v, index, arr) => {
         v.onclick = async () => {
@@ -914,6 +935,7 @@ function bindDropinModsRemoveButton(){
  * server configuration.
  */
 function bindDropinModFileSystemButton(){
+    if(!DROPIN_MODS_UI_ENABLED) return
     const fsBtn = document.getElementById('settingsDropinFileSystemButton')
     fsBtn.onclick = () => {
         DropinModUtil.validateDir(CACHE_SETTINGS_MODS_DIR)
@@ -945,6 +967,8 @@ function bindDropinModFileSystemButton(){
  * of adding/removing the .disabled extension.
  */
 function saveDropinModConfiguration(){
+    if(!DROPIN_MODS_UI_ENABLED || !CACHE_DROPIN_MODS) return
+    if(!DROPIN_MODS_UI_ENABLED || typeof CACHE_DROPIN_MODS === "undefined" || CACHE_DROPIN_MODS == null) return
     for(dropin of CACHE_DROPIN_MODS){
         const dropinUI = document.getElementById(dropin.fullName)
         if(dropinUI != null){
@@ -971,14 +995,19 @@ function saveDropinModConfiguration(){
 document.addEventListener('keydown', async (e) => {
     if(getCurrentView() === VIEWS.settings && selectedSettingsTab === 'settingsTabMods'){
         if(e.key === 'F5'){
-            await reloadDropinMods()
-            saveShaderpackSettings()
-            await resolveShaderpacksForUI()
+            if(DROPIN_MODS_UI_ENABLED){
+                await reloadDropinMods()
+            }
+            if(SHADERPACK_UI_ENABLED){
+                saveShaderpackSettings()
+                await resolveShaderpacksForUI()
+            }
         }
     }
 })
 
 async function reloadDropinMods(){
+    if(!DROPIN_MODS_UI_ENABLED) return
     await resolveDropinModsForUI()
     bindDropinModsRemoveButton()
     bindDropinModFileSystemButton()
@@ -995,6 +1024,7 @@ let CACHE_SELECTED_SHADERPACK
  * Load shaderpack information.
  */
 async function resolveShaderpacksForUI(){
+    if(!SHADERPACK_UI_ENABLED) return
     const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
     CACHE_SETTINGS_INSTANCE_DIR = path.join(ConfigManager.getInstanceDirectory(), serv.rawServer.id)
     CACHE_SHADERPACKS = DropinModUtil.scanForShaderpacks(CACHE_SETTINGS_INSTANCE_DIR)
@@ -1004,7 +1034,8 @@ async function resolveShaderpacksForUI(){
 }
 
 function setShadersOptions(arr, selected){
-    const cont = document.getElementById('settingsShadersOptions')
+    if(!SHADERPACK_UI_ENABLED) return
+    const cont = null
     cont.innerHTML = ''
     for(let opt of arr) {
         const d = document.createElement('DIV')
@@ -1027,8 +1058,9 @@ function setShadersOptions(arr, selected){
 }
 
 function saveShaderpackSettings(){
+    if(!SHADERPACK_UI_ENABLED) return
     let sel = 'OFF'
-    for(let opt of document.getElementById('settingsShadersOptions').childNodes){
+    for(let opt of null.childNodes){
         if(opt.hasAttribute('selected')){
             sel = opt.getAttribute('value')
         }
@@ -1037,6 +1069,7 @@ function saveShaderpackSettings(){
 }
 
 function bindShaderpackButton() {
+    if(!SHADERPACK_UI_ENABLED) return
     const spBtn = document.getElementById('settingsShaderpackButton')
     spBtn.onclick = () => {
         const p = path.join(CACHE_SETTINGS_INSTANCE_DIR, 'shaderpacks')
@@ -1075,7 +1108,7 @@ async function loadSelectedServerOnModsTab(){
 
     for(const el of document.getElementsByClassName('settingsSelServContent')) {
         el.innerHTML = `
-            <img class="serverListingImg" src="${serv.rawServer.icon}"/>
+            <img class="serverListingImg" src="assets/images/SealCircle.png"/>
             <div class="serverListingDetails">
                 <span class="serverListingName">${serv.rawServer.name}</span>
                 <span class="serverListingDescription">${serv.rawServer.description}</span>
@@ -1083,14 +1116,6 @@ async function loadSelectedServerOnModsTab(){
                     <div class="serverListingVersion">${serv.rawServer.minecraftVersion}</div>
                     <div class="serverListingRevision">${serv.rawServer.version}</div>
                     ${serv.rawServer.mainServer ? `<div class="serverListingStarWrapper">
-                        <svg id="Layer_1" viewBox="0 0 107.45 104.74" width="20px" height="20px">
-                            <defs>
-                                <style>.cls-1{fill:#fff;}.cls-2{fill:none;stroke:#fff;stroke-miterlimit:10;}</style>
-                            </defs>
-                            <path class="cls-1" d="M100.93,65.54C89,62,68.18,55.65,63.54,52.13c2.7-5.23,18.8-19.2,28-27.55C81.36,31.74,63.74,43.87,58.09,45.3c-2.41-5.37-3.61-26.52-4.37-39-.77,12.46-2,33.64-4.36,39-5.7-1.46-23.3-13.57-33.49-20.72,9.26,8.37,25.39,22.36,28,27.55C39.21,55.68,18.47,62,6.52,65.55c12.32-2,33.63-6.06,39.34-4.9-.16,5.87-8.41,26.16-13.11,37.69,6.1-10.89,16.52-30.16,21-33.9,4.5,3.79,14.93,23.09,21,34C70,86.84,61.73,66.48,61.59,60.65,67.36,59.49,88.64,63.52,100.93,65.54Z"/>
-                            <circle class="cls-2" cx="53.73" cy="53.9" r="38"/>
-                        </svg>
-                        <span class="serverListingStarTooltip">${Lang.queryJS('settings.serverListing.mainServer')}</span>
                     </div>` : ''}
                 </div>
             </div>
@@ -1112,7 +1137,9 @@ Array.from(document.getElementsByClassName('settingsSwitchServerButton')).forEac
 function saveAllModConfigurations(){
     saveModConfiguration()
     ConfigManager.save()
-    saveDropinModConfiguration()
+    if(DROPIN_MODS_UI_ENABLED){
+        saveDropinModConfiguration()
+    }
 }
 
 /**
@@ -1131,11 +1158,18 @@ function animateSettingsTabRefresh(){
  */
 async function prepareModsTab(first){
     await resolveModsForUI()
-    await resolveDropinModsForUI()
-    await resolveShaderpacksForUI()
-    bindDropinModsRemoveButton()
-    bindDropinModFileSystemButton()
-    bindShaderpackButton()
+
+    if(DROPIN_MODS_UI_ENABLED){
+        await resolveDropinModsForUI()
+        bindDropinModsRemoveButton()
+        bindDropinModFileSystemButton()
+    }
+
+    if(SHADERPACK_UI_ENABLED){
+        await resolveShaderpacksForUI()
+        bindShaderpackButton()
+    }
+
     bindModsToggleSwitch()
     await loadSelectedServerOnModsTab()
 }
@@ -1371,13 +1405,31 @@ function populateJvmOptsLink(server) {
 function bindMinMaxRam(server) {
     // Store maximum memory values.
     const SETTINGS_MAX_MEMORY = ConfigManager.getAbsoluteMaxRAM(server.rawServer.javaOptions?.ram)
-    const SETTINGS_MIN_MEMORY = ConfigManager.getAbsoluteMinRAM(server.rawServer.javaOptions?.ram)
+    const resolvedMin = ConfigManager.getAbsoluteMinRAM(server.rawServer.javaOptions?.ram)
+    // MCT: Force the slider minimum to 4.0G (clamped to max for low-RAM systems).
+    const SETTINGS_MIN_MEMORY = Math.min(SETTINGS_MAX_MEMORY, Math.max(4, resolvedMin))
 
     // Set the max and min values for the ranged sliders.
     settingsMaxRAMRange.setAttribute('max', SETTINGS_MAX_MEMORY)
     settingsMaxRAMRange.setAttribute('min', SETTINGS_MIN_MEMORY)
     settingsMinRAMRange.setAttribute('max', SETTINGS_MAX_MEMORY)
     settingsMinRAMRange.setAttribute('min', SETTINGS_MIN_MEMORY)
+
+    // Clamp current slider values to the new bounds.
+    // This prevents the UI from becoming desynced if the saved config (or default markup)
+    // contains values below the enforced minimum.
+    const clamp = (val, min, max) => Math.max(min, Math.min(max, val))
+
+    let curMin = Number(settingsMinRAMRange.getAttribute('value'))
+    if(Number.isNaN(curMin)) curMin = SETTINGS_MIN_MEMORY
+    curMin = clamp(curMin, SETTINGS_MIN_MEMORY, SETTINGS_MAX_MEMORY)
+    settingsMinRAMRange.setAttribute('value', curMin)
+
+    let curMax = Number(settingsMaxRAMRange.getAttribute('value'))
+    if(Number.isNaN(curMax)) curMax = SETTINGS_MAX_MEMORY
+    curMax = clamp(curMax, SETTINGS_MIN_MEMORY, SETTINGS_MAX_MEMORY)
+    if(curMax < curMin) curMax = curMin
+    settingsMaxRAMRange.setAttribute('value', curMax)
 }
 
 /**
@@ -1397,9 +1449,9 @@ async function prepareJavaTab(){
  */
 
 const settingsTabAbout             = document.getElementById('settingsTabAbout')
-const settingsAboutChangelogTitle  = settingsTabAbout.getElementsByClassName('settingsChangelogTitle')[0]
-const settingsAboutChangelogText   = settingsTabAbout.getElementsByClassName('settingsChangelogText')[0]
-const settingsAboutChangelogButton = settingsTabAbout.getElementsByClassName('settingsChangelogButton')[0]
+const settingsAboutChangelogTitle  = settingsTabAbout ? settingsTabAbout.getElementsByClassName('settingsChangelogTitle')[0] : null
+const settingsAboutChangelogText   = settingsTabAbout ? settingsTabAbout.getElementsByClassName('settingsChangelogText')[0] : null
+const settingsAboutChangelogButton = settingsTabAbout ? settingsTabAbout.getElementsByClassName('settingsChangelogButton')[0] : null
 
 // Bind the devtools toggle button.
 document.getElementById('settingsAboutDevToolsButton').onclick = (e) => {
@@ -1452,6 +1504,9 @@ function populateAboutVersionInformation(){
  * of the current version. This value is displayed on the UI.
  */
 function populateReleaseNotes(){
+    if(!settingsAboutChangelogTitle || !settingsAboutChangelogText || !settingsAboutChangelogButton){
+        return
+    }
     $.ajax({
         url: 'https://github.com/dscalzi/HeliosLauncher/releases.atom',
         success: (data) => {
@@ -1482,7 +1537,7 @@ function populateReleaseNotes(){
  */
 function prepareAboutTab(){
     populateAboutVersionInformation()
-    populateReleaseNotes()
+    // MCT: Release notes section removed from About tab.
 }
 
 /**

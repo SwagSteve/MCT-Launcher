@@ -46,6 +46,20 @@ body, button {
     color: white;
 }
 
+/* Prevent accidental body overflow (causes scrollbars in Electron/Chromium). */
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* MCT: If you want a larger UI, increase this (e.g., 1.1).
+   Keeping it at 1 prevents layout overflow/scrollbars. */
+body {
+    zoom: 1.4;
+}
+
+
 /*body {
     background: url('./../images/backgrounds/0.jpg') no-repeat center center fixed;
     background-size: cover;
@@ -1570,6 +1584,7 @@ input:checked + .toggleSwitchSlider:before {
 .settingsAuthAccountRight {
     display: flex;
     width: 100%;
+    min-width: 0;
 }
 
 /* Account details container. */
@@ -1579,6 +1594,8 @@ input:checked + .toggleSwitchSlider:before {
     justify-content: center;
     margin-left: 20px;
     width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 .settingsAuthAccountDetails > *:not(:last-child) {
     margin-bottom: 20px;
@@ -1598,6 +1615,8 @@ input:checked + .toggleSwitchSlider:before {
 .settingsAuthAccountDetailValue {
     font-size: 14px;
     -webkit-user-select: initial;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* Account actions container. */
@@ -1607,11 +1626,12 @@ input:checked + .toggleSwitchSlider:before {
     justify-content: space-between;
     align-items: flex-end;
     padding: 10px;
+    flex: 0 0 auto;
 }
 
 /* Account select button shared styles. */
 .settingsAuthAccountSelect {
-    opacity: 0;
+    opacity: 1;
     border: none;
     white-space: nowrap;
     background: none;
@@ -1634,7 +1654,7 @@ input:checked + .toggleSwitchSlider:before {
 
 /* Account logout button shared styles. */
 .settingsAuthAccountLogOut {
-    opacity: 0;
+    opacity: 1;
     border: 1px solid rgb(241, 55, 55);
     color: rgb(241, 55, 55);
     background: none;
@@ -1658,6 +1678,40 @@ input:checked + .toggleSwitchSlider:before {
 }
 .settingsAuthAccount:hover .settingsAuthAccountLogOut {
     opacity: 1;
+}
+
+/* Selected account highlight (makes the active account obvious). */
+.settingsAuthAccount[selectedaccount] {
+    border-color: rgba(46, 204, 113, 0.75);
+    box-shadow: 0px 0px 18px rgba(46, 204, 113, 0.25);
+}
+
+/* MCT: remove account as a red trash icon (instead of a text button). */
+.settingsAuthAccountLogOut {
+    border: none;
+    background: none;
+    padding: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(241, 55, 55);
+}
+.settingsAuthAccountLogOut .settingsTrashIcon {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+.settingsAuthAccountLogOut:hover,
+.settingsAuthAccountLogOut:focus {
+    box-shadow: 0px 0px 20px rgb(241, 55, 55);
+    background: rgba(241, 55, 55, 0.18);
+    border-radius: 4px;
+}
+.settingsAuthAccountLogOut:active {
+    box-shadow: 0px 0px 20px rgb(185, 47, 47);
+    background: rgba(185, 47, 47, 0.18);
 }
 
 /* * *
@@ -2160,6 +2214,7 @@ input:checked + .toggleSwitchSlider:before {
     width: 30px;
     height: 30px;
     padding: 5px;
+    object-fit: contain;
 }
 #settingsAboutTitle {
     font-size: 23px;
@@ -2522,6 +2577,7 @@ input:checked + .toggleSwitchSlider:before {
     height: 100%;
     width: 33%;
     display: inline-flex;
+    align-items: center;
 }
 
 /*******************************************************************************
@@ -2858,18 +2914,25 @@ input:checked + .toggleSwitchSlider:before {
     height: 70px;
     width: auto;
     position: relative;
-    border: 2px solid white;
+    border: none;
     box-sizing: border-box;
-    border-radius: 50%;
+    border-radius: 0;
 }
 
 /* Logo container styles. */
 #image_seal_container {
-    position: relative;
-    height: 70px;
-    width: 70px;
-    border-radius: 50%;
-    margin-top: 50px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: auto;
+    width: auto;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0;
+    z-index: 10;
 }
 
 /* Logo container styles w/ update. */
@@ -2885,7 +2948,7 @@ input:checked + .toggleSwitchSlider:before {
     width: 100%;
     top: 0%;
     left: 0%;
-    border-radius: 50%;
+    border-radius: 0;
     box-shadow: 0 0 15px #43c628;
     animation: glow-grow 4s ease-out infinite;
     background: rgba(0, 0, 0, 0.15);
@@ -2970,8 +3033,8 @@ input:checked + .toggleSwitchSlider:before {
 
 /* User profile avatar container. */
 #avatarContainer {
-    border-radius: 50%;
-    border: 2px solid #cad7e1;
+    border-radius: 0;
+    border: 2px solid rgba(255,255,255,0.90);
     box-sizing: border-box;
     background: rgba(1, 2, 1, 0.5);
     height: 70px;
@@ -3001,7 +3064,6 @@ input:checked + .toggleSwitchSlider:before {
     cursor: pointer;
     width: 100%;
     height: 100%;
-    border-radius: 50%;
 }
 #avatarOverlay:hover,
 #avatarOverlay:focus {
@@ -3017,12 +3079,30 @@ input:checked + .toggleSwitchSlider:before {
     min-width: 135px;
     font-weight: 900;
     letter-spacing: 1px;
-    text-shadow: 0px 0px 20px black;
+    text-shadow: 0px 0px 6px rgba(0,0,0,0.75);
+    -webkit-text-stroke: 0.55px rgba(255,255,255,0.92);
     position: absolute;
     right: 95px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
     text-align: right;
     -webkit-user-select: initial;
 }
+
+/* MCT: Team icon + team-coloured username (selected account only). */
+#user_text .mct-team-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+#user_text.mct-team-red { color: #ff4d4d; }
+#user_text.mct-team-blue { color: #4da3ff; }
+#user_text.mct-team-green { color: #5bff80; }
+#user_text.mct-team-orange { color: #ffb14d; }
 
 /* Social media icon content container. */
 #mediaContent {
@@ -3389,41 +3469,46 @@ input:checked + .toggleSwitchSlider:before {
 /* Main launch content container. */
 #landingContainer > #lower > #right #launch_content {
     position: relative;
-    top: 25px;
+    top: 0px;
     display: inline-flex;
 }
 
 /* The launch button. */
 #launch_button {
-    background: none;
+    width: 128px;          /* base pixel size of image */
+    height: 48px;
+    transform: scale(1.2); /* SCALE HERE */
+    transform-origin: bottom right;
+    margin-right: 20px;
+    right: 10%;
+    bottom: 20px;
+    position: absolute;
+
+    image-rendering: pixelated;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+
     border: none;
+    background-color: transparent;
     cursor: pointer;
-    font-weight: 900;
-    letter-spacing: 2px;
-    text-shadow: 0px 0px 0px #bebcbb;
-    font-size: 20px;
-    padding: 0px;
-    transition: 0.25s ease;
-    outline: none;
 }
 #launch_button:hover,
 #launch_button:focus {
     text-shadow: 0px 0px 20px #fff, 0px 0px 20px #fff;
 }
-#launch_button:active {
-    color: #c7c7c7;
-    text-shadow: 0px 0px 20px #c7c7c7, 0px 0px 20px #c7c7c7;
+#launch_button:active:not(:disabled) {
+    transform: scale(1.2) translateY(1px);
 }
 #launch_button:disabled {
-    color: #c7c7c7;
+    opacity: 0.6;
     cursor: default;
-    pointer-events: none;
 }
 
 /* Launch details main container, hidden until launch processing begins. */
 #launch_details {
     position: relative;
-    top: 25px;
+    top: 0px;
     display: none;
 }
  
@@ -3750,6 +3835,7 @@ input:checked + .toggleSwitchSlider:before {
     border: 1px solid #fff;
     height: 50px;
     width: 50px;
+    object-fit: contain;
 }
 
 /* Content container for the server listing's details. */
@@ -3966,3 +4052,224 @@ input:checked + .toggleSwitchSlider:before {
 .rotating {
     animation: rotating 10s linear infinite;
 }
+/*******************************************************************************
+ *                                                                             *
+ * MCT Launcher - Custom UI Tweaks                                             *
+ *                                                                             *
+ ******************************************************************************/
+
+/* Hide drop-in mods + shader packs sections in Mods settings tab. */
+#settingsDropinModsContainer,
+#settingsShadersContainer {
+    display: none !important;
+}
+
+/* Hide the prerelease updates toggle if present. */
+.toggleSwitch input[cValue="AllowPrerelease"],
+.toggleSwitch input[cValue="AllowPrerelease"] + .toggleSwitchSlider {
+    display: none !important;
+}
+
+/* Remove release notes section from About tab (UI only). */
+#settingsTabAbout .settingsChangelogContainer {
+    display: none !important;
+}
+
+
+
+/*
+ * MCT: Main landing logo
+ * - Must be perfectly centered.
+ * - Must NOT persist through other menus.
+ *   (so it stays inside #landingContainer and is absolutely positioned).
+ */
+#landingContainer #image_seal_container {
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    margin: 0;
+    width: 50%;
+    height: 50%;
+    pointer-events: none;
+}
+
+#landingContainer #image_seal {
+    border: none;
+    border-radius: 0;
+    width: clamp(120px, 22vw, 220px);
+    height: auto;
+    display: block;
+}
+
+/* Update tooltip still needs to be clickable/hoverable. */
+#landingContainer #updateAvailableTooltip {
+    pointer-events: auto;
+}
+
+
+
+/* NOTE: Do not clamp the auth account containers.
+ * Clamping this previously hid the Select/Remove controls on the Accounts tab.
+ */
+
+#launch_content .bot_divider,
+#server_selection_button {
+    display: none !important;
+}
+
+/* MCT: Move LAUNCH left (more inset from the right). */
+#landingContainer > #lower > #right {
+    justify-content: flex-end;
+}
+#landingContainer > #lower > #right #launch_content,
+#landingContainer > #lower > #right #launch_details {
+    margin-right: clamp(110px, 8vw, 200px);
+}
+
+#launch_button {
+    margin-left: 0 !important;
+}
+
+/* MCT: Keep news backend (initNews, distro refresh hooks), but hide all news UI. */
+#landingContainer > #lower > #center #content,
+#newsButton,
+#newsContainer,
+#newsNavigationContainer,
+#newsNavigationStatus,
+#newsNavigateLeft,
+#newsNavigateRight,
+#newsErrorContainer {
+    display: none !important;
+}
+
+
+/* === MCT Team Avatar Styling === */
+#avatarContainer.mct-team-avatar-red { background-color: #ff4d4d; }
+#avatarContainer.mct-team-avatar-blue { background-color: #4da3ff; }
+#avatarContainer.mct-team-avatar-green { background-color: #5bff80; }
+#avatarContainer.mct-team-avatar-orange { background-color: #ffb14d; }
+
+/* === MCT Play Button (Pixel Art) === */
+#launch_button.mct-play-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    outline: none;
+    position: relative;
+}
+
+#launch_button.mct-play-btn .mct-play-fallback {
+    display: none; /* hide text, keep for accessibility */
+}
+
+#launch_button.mct-play-btn .mct-play-img {
+    height: 64px; /* adjust if needed */
+    width: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+    display: block;
+}
+
+#launch_button.mct-play-btn:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+
+/* ========================================================================== */
+/* MCT: Play button responsive alignment
+   Goal:
+   - Keep the centre of the PLAY button aligned with the left status row text
+     ("PLAYERS 0/20" / "MOJANG STATUS") across window sizes.
+   - Allow the pixel-art button to scale down on smaller windows without ever
+     growing past the preferred size.
+   - Do NOT change launch logic/visibility (JS still controls #launch_details).
+*/
+
+/*
+   IMPORTANT: In this fork, #launch_content is wrapped inside .bot_wrapper
+   (see landing.ejs). That means the old direct-child selectors (>
+   #launch_content) never matched, and the base Helios rule for #launch_button
+   (position:absolute; bottom:20px; etc) kept pulling the button down whenever
+   the lower pane got taller.
+
+   Fix:
+   - Absolutely position ONLY the right-side .bot_wrapper so its vertical centre
+     matches the left status row centre.
+   - Put the pixel-art PLAY button back into normal flow so it actually has a
+     height (and therefore can be centred reliably).
+*/
+
+/* Left status row: top: 25px; line-height: 24px -> centre at 37px. */
+#landingContainer > #lower > #right {
+    position: relative; /* anchor for absolute positioning below */
+}
+
+#landingContainer > #lower > #right > .bot_wrapper {
+    position: absolute;
+    top: 37px;
+    transform: translateY(-50%);
+
+    /* Keep the existing horizontal inset you liked for LAUNCH/PLAY. */
+    right: clamp(110px, 8vw, 200px);
+
+    height: auto;
+    width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Ensure launch containers stay in normal flow inside the positioned wrapper. */
+#landingContainer > #lower > #right > .bot_wrapper #launch_content,
+#landingContainer > #lower > #right > .bot_wrapper #launch_details {
+    position: relative;
+    top: 0;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    margin: 0;
+}
+
+/* Reset the old fixed-size/absolute placement rules for the pixel-art play
+   button variant ONLY (keeps other Helios buttons untouched). */
+#launch_button.mct-play-btn {
+    position: relative;
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin: 0;
+    margin-right: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+
+    transform: none;
+    transform-origin: center;
+
+    background: transparent;
+    border: none;
+}
+
+/* Press effect without scaling (keeps alignment stable). */
+#launch_button.mct-play-btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+/* Scale down on smaller windows, but never exceed the preferred 64px height. */
+.mct-play-btn-img,
+.mct-play-img,
+#launch_button.mct-play-btn .mct-play-img,
+#launch_button.mct-play-btn .mct-play-btn-img {
+    height: clamp(40px, 6vh, 64px);
+    width: auto;
+    image-rendering: pixelated;
+    -ms-interpolation-mode: nearest-neighbor;
+}
+

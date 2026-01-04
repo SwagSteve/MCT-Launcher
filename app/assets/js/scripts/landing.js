@@ -3,6 +3,8 @@
  */
 // Requirements
 const { URL }                 = require('url')
+const http                    = require('http')
+const https                   = require('https')
 const {
     MojangRestAPI,
     getServerStatus
@@ -40,7 +42,18 @@ const launch_details_text     = document.getElementById('launch_details_text')
 const server_selection_button = document.getElementById('server_selection_button')
 const user_text               = document.getElementById('user_text')
 
+// ===== MCT: Team styling for the logged-in user (no player list UI) =====
+// If the selected account's displayName matches a name in the team endpoint,
+// we color the username and prepend the team's icon.
+let mctSelectedUsername = null
+let mctTeamRefreshTimer = null
+const MCT_TEAM_REFRESH_MS = 15000
+
 const loggerLanding = LoggerUtil.getLogger('Landing')
+
+// NOTE (MCT): Do NOT move the logo container to <body>.
+// The landing view is hidden when switching menus. If the logo is appended to <body>,
+// it will persist across all menus.
 
 /* Launch Progress Wrapper Functions */
 
@@ -94,13 +107,44 @@ function setDownloadPercentage(percent){
  * 
  * @param {boolean} val True to enable, false to disable.
  */
+// Track whether the launch button should be available (server selected)
+// and whether a Minecraft instance is currently running.
+let mctLaunchAllowed = false
+let mctGameRunning = false
+
+/**
+ * Set whether the game is currently running. While running, the play button is
+ * disabled and shows the gray button art.
+ * 
+ * @param {boolean} isRunning True if the Minecraft process is running.
+ */
+function mctSetGameRunning(isRunning){
+    mctGameRunning = !!isRunning
+    const btn = document.getElementById('launch_button')
+    if(btn) btn.disabled = !mctLaunchAllowed || mctGameRunning
+    mctUpdatePlayButtonVisual()
+}
+
+/**
+ * Enable or disable the launch button.
+ * 
+ * @param {boolean} val True to enable, false to disable.
+ */
 function setLaunchEnabled(val){
-    document.getElementById('launch_button').disabled = !val
+    mctLaunchAllowed = !!val
+    const btn = document.getElementById('launch_button')
+    if(btn) btn.disabled = !mctLaunchAllowed || mctGameRunning
+    mctUpdatePlayButtonVisual()
 }
 
 // Bind launch button
 document.getElementById('launch_button').addEventListener('click', async e => {
     loggerLanding.info('Launching game..')
+    // Prevent launching multiple Minecraft instances.
+    if(mctGameRunning){
+        loggerLanding.warn('Launch requested while game is already running, ignoring.')
+        return
+    }
     try {
         const server = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
         const jExe = ConfigManager.getJavaExecutable(ConfigManager.getSelectedServer())
@@ -142,6 +186,37 @@ document.getElementById('avatarOverlay').onclick = async e => {
 }
 
 // Bind selected account
+
+// === MCT: Random avatar render types (Starlight Skins) ===
+const MCT_RENDER_TYPES = [
+    "default","marching","walking","crouching","crossed","criss_cross","ultimate",
+    "cheering","relaxing","trudging","cowering","pointing","lunging","dungeons",
+    "facepalm","sleeping","archer","kicking","reading","clown"
+]
+
+function mctPickRandomRenderType(){
+    return MCT_RENDER_TYPES[Math.floor(Math.random() * MCT_RENDER_TYPES.length)]
+}
+
+// Play button image paths (optional assets).
+const MCT_PLAY_IMG_NORMAL   = "assets/images/play_button/button.png"
+const MCT_PLAY_IMG_PRESSED  = "assets/images/play_button/pressed.png"
+const MCT_PLAY_IMG_DISABLED = "assets/images/play_button/gray.png"
+
+function mctUpdatePlayButtonVisual(){
+    const btn = document.getElementById('launch_button')
+    const img = document.getElementById('launch_button_img')
+    if(!btn || !img) return
+
+    if(btn.disabled){
+        img.src = MCT_PLAY_IMG_DISABLED
+        btn.classList.remove('mct-pressed')
+    } else if(btn.classList.contains('mct-pressed')){
+        img.src = MCT_PLAY_IMG_PRESSED
+    } else {
+        img.src = MCT_PLAY_IMG_NORMAL
+    }
+}
 function updateSelectedAccount(authUser){
     let username = Lang.queryJS('landing.selectedAccount.noAccountSelected')
     if(authUser != null){
@@ -149,10 +224,24 @@ function updateSelectedAccount(authUser){
             username = authUser.displayName
         }
         if(authUser.uuid != null){
-            document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/body/${authUser.uuid}/right')`
+            const mctRenderType = mctPickRandomRenderType()
+            document.getElementById('avatarContainer').dataset.mctRenderType = mctRenderType
+            document.getElementById('avatarContainer').style.backgroundImage = `url('https://starlightskins.lunareclipse.studio/render/${mctRenderType}/${authUser.uuid}/full')`
         }
     }
-    user_text.innerHTML = username
+
+    // MCT: Only attempt team styling when a real account is selected.
+    if(authUser != null && authUser.displayName != null){
+        // Always render the raw username first (white / no icon), then refresh team styling.
+        mctSelectedUsername = username
+        mctRenderUsername(username, null)
+        // Fire an immediate refresh + ensure the interval is running.
+        mctRefreshSelectedUserTeam()
+        mctEnsureTeamRefreshTimer()
+    } else {
+        mctSelectedUsername = null
+        if(user_text) user_text.textContent = username
+    }
 }
 updateSelectedAccount(ConfigManager.getSelectedAccount())
 
@@ -245,13 +334,13 @@ const refreshServerStatus = async (fade = false) => {
     try {
 
         const servStat = await getServerStatus(47, serv.hostname, serv.port)
-        console.log(servStat)
         pLabel = Lang.queryJS('landing.serverStatus.players')
         pVal = servStat.players.online + '/' + servStat.players.max
 
     } catch (err) {
         loggerLanding.warn('Unable to refresh server status, assuming offline.')
         loggerLanding.debug(err)
+        // Ignore team styling failures here. Team refresh is handled separately.
     }
     if(fade){
         $('#server_status_wrapper').fadeOut(250, () => {
@@ -266,6 +355,237 @@ const refreshServerStatus = async (fade = false) => {
     
 }
 
+// =========================
+// MCT: Team styling for selected account
+// =========================
+//
+// Behaviour:
+//  - We only color + iconify the SELECTED ACCOUNT name (top-right).
+//  - If the account name matches a name in the team endpoint, apply that team.
+//  - If not in a team, show white text with no icon.
+//  - Refresh on login/selection AND on an interval so team switches update.
+
+function mctNormalizeName(name){
+    return String(name ?? '').trim().toLowerCase()
+}
+
+function mctGetTeamDataURL(){
+    let url = null
+    try {
+        url = Lang.queryEJS('landing.teamDataURL')
+    } catch (_) {
+        url = null
+    }
+    // Backwards compatibility (if stored under JS namespace).
+    if(!url || url === '#'){
+        try {
+            url = Lang.queryJS('landing.teamDataURL')
+        } catch (_) {
+            url = null
+        }
+    }
+    url = String(url ?? '').trim()
+    if(!url || url === '#') return null
+    return url
+}
+
+function mctClearTeamClasses(){
+    if(!user_text) return
+    user_text.classList.remove('mct-team-red','mct-team-blue','mct-team-green','mct-team-orange')
+}
+
+function mctRenderUsername(username, team){
+    if(!user_text) return
+
+    const safeName = String(username ?? '')
+
+    // Reset content.
+    while(user_text.firstChild){
+        user_text.removeChild(user_text.firstChild)
+    }
+    mctClearTeamClasses()
+
+    // Apply team styling to avatar container.
+    const avatar = document.getElementById('avatarContainer')
+    if(avatar){
+        avatar.classList.remove('mct-team-avatar-red','mct-team-avatar-blue','mct-team-avatar-green','mct-team-avatar-orange')
+        if(team && ['red','blue','green','orange'].includes(team)){
+            avatar.classList.add(`mct-team-avatar-${team}`)
+        }
+    }
+
+    if(team && ['red','blue','green','orange'].includes(team)){
+        user_text.classList.add(`mct-team-${team}`)
+
+        const img = document.createElement('img')
+        img.className = 'mct-team-icon'
+        img.alt = team
+        img.src = `assets/images/${team}.png`
+
+        const nameSpan = document.createElement('span')
+        nameSpan.className = 'mct-team-name'
+        nameSpan.textContent = safeName
+
+        // Icon precedes name.
+        user_text.appendChild(img)
+        user_text.appendChild(nameSpan)
+    } else {
+        // Not in a team: white with no icon.
+        user_text.textContent = safeName
+    }
+}
+
+function mctSplitNames(val){
+    if(val == null) return []
+    if(Array.isArray(val)){
+        return val.map(v => String(v ?? '').trim()).filter(Boolean)
+    }
+    if(typeof val === 'string'){
+        // Support comma/semicolon/newline separated names.
+        return val.split(/[\n\r,;]+/g).map(s => s.trim()).filter(Boolean)
+    }
+    if(typeof val === 'object'){
+        if(Array.isArray(val.players)) return mctSplitNames(val.players)
+        if(Array.isArray(val.members)) return mctSplitNames(val.members)
+    }
+    return []
+}
+
+function mctUnwrapTeamData(teamData){
+    // Common shape from your site: [{ Red: "a, b", Blue: "c" }]
+    if(Array.isArray(teamData) && teamData.length > 0 && typeof teamData[0] === 'object'){
+        return teamData[0]
+    }
+    if(teamData && typeof teamData === 'object'){
+        if(teamData.teams && typeof teamData.teams === 'object') return teamData.teams
+        if(teamData.data && typeof teamData.data === 'object') return teamData.data
+    }
+    return teamData
+}
+
+function mctHttpGetText(urlStr, timeoutMs=6000){
+    return new Promise((resolve, reject) => {
+        let u
+        try {
+            u = new URL(urlStr)
+        } catch (e) {
+            reject(new Error('Invalid teamDataURL'))
+            return
+        }
+
+        const lib = u.protocol === 'https:' ? https : http
+        const req = lib.request({
+            protocol: u.protocol,
+            hostname: u.hostname,
+            port: u.port || (u.protocol === 'https:' ? 443 : 80),
+            path: u.pathname + (u.search || ''),
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'MCT-Launcher'
+            }
+        }, (res) => {
+            let data = ''
+            res.setEncoding('utf8')
+            res.on('data', chunk => { data += chunk })
+            res.on('end', () => {
+                resolve({
+                    statusCode: res.statusCode,
+                    body: data
+                })
+            })
+        })
+
+        req.on('error', reject)
+        req.setTimeout(timeoutMs, () => {
+            try { req.destroy(new Error('Request timed out')) } catch(_){ }
+        })
+        req.end()
+    })
+}
+
+async function mctFetchTeamData(teamDataURL){
+    // Use Node http/https to avoid CORS issues from file:// renderer.
+    const res = await mctHttpGetText(teamDataURL, 6000)
+    if(!res.statusCode || res.statusCode < 200 || res.statusCode >= 300){
+        throw new Error(`teamDataURL HTTP ${res.statusCode || '??'}`)
+    }
+    let json
+    try {
+        json = JSON.parse(res.body)
+    } catch (e) {
+        throw new Error('teamDataURL returned non-JSON')
+    }
+    return json
+}
+
+function mctBuildTeamMap(teamData){
+    const map = new Map()
+    const teams = ['red', 'blue', 'green', 'orange']
+    const obj = mctUnwrapTeamData(teamData)
+
+    // Support list-style endpoints: [{player:"x",team:"Red"}, ...]
+    if(Array.isArray(teamData) && teamData.length > 0 && typeof teamData[0] === 'object' && ('player' in teamData[0] || 'username' in teamData[0])){
+        for(const row of teamData){
+            const name = mctNormalizeName(row.player ?? row.username ?? row.name)
+            const teamRaw = String(row.team ?? row.color ?? '').trim().toLowerCase()
+            const t = teams.includes(teamRaw) ? teamRaw : null
+            if(name && t) map.set(name, t)
+        }
+        return map
+    }
+
+    if(obj && typeof obj === 'object'){
+        for(const t of teams){
+            const key1 = t
+            const key2 = t.charAt(0).toUpperCase() + t.slice(1)
+            const key3 = t.toUpperCase()
+            const names = [
+                ...mctSplitNames(obj[key1]),
+                ...mctSplitNames(obj[key2]),
+                ...mctSplitNames(obj[key3])
+            ]
+            for(const rawName of names){
+                const n = mctNormalizeName(rawName)
+                if(n.length > 0) map.set(n, t)
+            }
+        }
+    }
+
+    return map
+}
+
+async function mctRefreshSelectedUserTeam(){
+    // Only run when we have a selected username to check.
+    if(!mctSelectedUsername || !user_text) return
+
+    const url = mctGetTeamDataURL()
+    if(!url){
+        // Endpoint not configured -> render default white/no icon.
+        mctRenderUsername(mctSelectedUsername, null)
+        return
+    }
+
+    try {
+        const teamData = await mctFetchTeamData(url)
+        const teamMap = mctBuildTeamMap(teamData)
+        const team = teamMap.get(mctNormalizeName(mctSelectedUsername)) || null
+        mctRenderUsername(mctSelectedUsername, team)
+    } catch (e) {
+        loggerLanding.warn('MCT team refresh failed.', e)
+        mctRenderUsername(mctSelectedUsername, null)
+    }
+}
+
+function mctEnsureTeamRefreshTimer(){
+    if(mctTeamRefreshTimer != null) return
+    // Keep this lightweight. Only one request every MCT_TEAM_REFRESH_MS.
+    mctTeamRefreshTimer = setInterval(() => {
+        mctRefreshSelectedUserTeam()
+    }, MCT_TEAM_REFRESH_MS)
+}
+
+
 refreshMojangStatuses()
 // Server Status is refreshed in uibinder.js on distributionIndexDone.
 
@@ -273,6 +593,8 @@ refreshMojangStatuses()
 let mojangStatusListener = setInterval(() => refreshMojangStatuses(true), 60*60*1000)
 // Set refresh rate to once every 5 minutes.
 let serverStatusListener = setInterval(() => refreshServerStatus(true), 300000)
+
+
 
 /**
  * Shows an error overlay, toggles off the launch area.
@@ -608,6 +930,9 @@ async function dlAsync(login = true) {
             // Build Minecraft process.
             proc = pb.build()
 
+            // While the Minecraft process is running, disable the play button.
+            mctSetGameRunning(true)
+
             // Bind listeners to stdout.
             proc.stdout.on('data', tempListener)
             proc.stderr.on('data', gameErrorListener)
@@ -623,6 +948,16 @@ async function dlAsync(login = true) {
                     DiscordWrapper.shutdownRPC()
                     hasRPC = false
                     proc = null
+                    mctSetGameRunning(false)
+                    toggleLaunchArea(false)
+                })
+            } else {
+                // Always clear process state when the game closes (even without Discord RPC).
+                proc.on('close', (code, signal) => {
+                    loggerLaunchSuite.info('Game process closed.')
+                    proc = null
+                    mctSetGameRunning(false)
+                    toggleLaunchArea(false)
                 })
             }
 
@@ -639,6 +974,14 @@ async function dlAsync(login = true) {
 /**
  * News Loading Functions
  */
+
+// MCT: The built-in news UI is disabled.
+// We keep the underlying implementation (for future use), but do not bind or
+// initialize it in the launcher.
+const NEWS_UI_ENABLED = true
+
+
+if(NEWS_UI_ENABLED){
 
 // DOM Cache
 const newsContent                   = document.getElementById('newsContent')
@@ -675,7 +1018,7 @@ function slide_(up){
         lCLLeft.style.top = '-200vh'
         lCLCenter.style.top = '-200vh'
         lCLRight.style.top = '-200vh'
-        newsBtn.style.top = '130vh'
+        
         newsContainer.style.top = '0px'
         //date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric'})
         //landingContainer.style.background = 'rgba(29, 29, 29, 0.55)'
@@ -1023,4 +1366,6 @@ async function loadNews(){
     })
 
     return await promise
+}
+
 }

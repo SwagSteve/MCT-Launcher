@@ -57,6 +57,27 @@ function getCurrentView(){
     return currentView
 }
 
+
+/**
+ * MCT: initNews is defined in landing.js. uibinder loads before landing.js,
+ * so calling initNews directly can throw a ReferenceError.
+ * This wrapper safely no-ops until landing.js registers the function.
+ */
+function safeInitNews(){
+    try {
+        const fn =
+            (typeof window !== 'undefined' && typeof window.initNews === 'function' ? window.initNews : null) ||
+            (typeof global !== 'undefined' && typeof global.initNews === 'function' ? global.initNews : null)
+
+        if(typeof fn === 'function'){
+            return Promise.resolve(fn())
+        }
+    } catch (e) {
+        // ignore
+    }
+    return Promise.resolve()
+}
+
 async function showMainUI(data){
 
     if(!isDev){
@@ -104,7 +125,7 @@ async function showMainUI(data){
         
     }, 750)
     // Disable tabbing to the news container.
-    initNews().then(() => {
+    safeInitNews().then(() => {
         $('#newsContainer *').attr('tabindex', '-1')
     })
 }
@@ -135,7 +156,7 @@ function showFatalStartupError(){
 function onDistroRefresh(data){
     updateSelectedServer(data.getServerById(ConfigManager.getSelectedServer()))
     refreshServerStatus()
-    initNews()
+    safeInitNews()
     syncModConfigurations(data)
     ensureJavaSettings(data)
 }

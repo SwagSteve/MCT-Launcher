@@ -9,9 +9,16 @@ mojangStatus = "MOJANG STATUS"
 mojangStatusTooltipTitle = "Services"
 mojangStatusNETitle = "Non&nbsp;Essential"
 newsButton = "NEWS"
-launchButton = "PLAY"
+launchButton = ""
 launchButtonPlaceholder = "&#8226; No Server Selected"
 launchDetails = "Please wait.."
+teamPlayersHeader = "Players"
+# URL to a JSON endpoint that returns team assignments.
+# Supported formats:
+#  - { "red": ["Player1"], "blue": "Player2, Player3", ... }
+#  - [ { "name": "Player1", "team": "red" }, ... ]
+# Set to "#" to disable.
+teamDataURL = "http://132.145.24.15/api/teams.php"
 newsNavigationStatus = "{currentPage} of {totalPages}"
 newsErrorLoadSpan = "Checking for News.."
 newsErrorFailedSpan = "Failed to Load News"
@@ -35,7 +42,7 @@ loginPasswordDisclaimer1 = "Your password is sent directly to mojang and never s
 loginPasswordDisclaimer2 = "{appName} is not affiliated with Mojang AB."
 
 [ejs.loginOptions]
-loginOptionsTitle = "Login Options"
+loginOptionsTitle = "Login"
 loginWithMicrosoft = "Login with Microsoft"
 loginWithMojang = "Login with Mojang"
 cancelButton = "Cancel"
@@ -62,7 +69,7 @@ tabAccountHeaderText = "Account Settings"
 tabAccountHeaderDesc = "Add new accounts or manage existing ones."
 microsoftAccount = "Microsoft"
 addMicrosoftAccount = "+ Add Microsoft Account"
-mojangAccount = "Mojang"
+mojangAccount = "Mojang [Legacy]"
 addMojangAccount = "+ Add Mojang Account"
 minecraftTabHeaderText = "Minecraft Settings"
 minecraftTabHeaderDesc = "Options related to game launch."
@@ -87,7 +94,7 @@ tabJavaHeaderDesc = "Manage the Java configuration (advanced)."
 memoryTitle = "Memory"
 maxRAM = "Maximum RAM"
 minRAM = "Minimum RAM"
-memoryDesc = "The recommended minimum RAM is 3 gigabytes. Setting the minimum and maximum values to the same value may reduce lag."
+memoryDesc = "The recommended minimum RAM is 4 gigabytes. Setting the minimum and maximum values to the same value may reduce lag."
 memoryTotalTitle = "Total"
 memoryAvailableTitle = "Available"
 javaExecutableTitle = "Java Executable"
@@ -197,14 +204,14 @@ unableToLoadDistributionIndex = "Could not load a copy of the distribution index
 pleaseWait = "Please wait.."
 errorDuringLaunchTitle = "Error During Launch"
 seeConsoleForDetails = "See console (CTRL + Shift + i) for more details."
-validatingFileIntegrity = "Validating file integrity.."
+validatingFileIntegrity = "Validating files.."
 errorDuringFileVerificationTitle = "Error During File Verification"
 downloadingFiles = "Downloading files.."
 errorDuringFileDownloadTitle = "Error During File Download"
 preparingToLaunch = "Preparing to launch.."
 launchingGame = "Launching game.."
-launchWrapperNotDownloaded = "The main file, LaunchWrapper, failed to download properly. As a result, the game cannot launch.<br><br>To fix this issue, temporarily turn off your antivirus software and launch the game again.<br><br>If you have time, please <a href=\"https://github.com/dscalzi/HeliosLauncher/issues\">submit an issue</a> and let us know what antivirus software you use. We'll contact them and try to straighten things out."
-doneEnjoyServer = "Done. Enjoy the server!"
+launchWrapperNotDownloaded = "The main file, LaunchWrapper, failed to download properly. As a result, the game cannot launch.<br><br>To fix this issue, temporarily turn off your antivirus software and launch the game again.<br><br>If you have time, please <a href=\"https://github.com/SwagSteve/MCT-Launcher/issues\">submit an issue</a> and let us know what antivirus software you use. We'll contact them and try to straighten things out."
+doneEnjoyServer = "Done. Enjoy the event!"
 checkConsoleForDetails = "Please check the console (CTRL + Shift + i) for more details."
 
 [js.landing.news]
@@ -237,9 +244,9 @@ selectButton = "Select Account"
 selectedButton = "Selected Account &#10004;"
 
 [js.settings.authAccountLogout]
-lastAccountWarningTitle = "Warning<br>This is Your Last Account"
-lastAccountWarningMessage = "In order to use the launcher you must be logged into at least one account. You will need to login again after.<br><br>Are you sure you want to log out?"
-confirmButton = "I'm Sure"
+lastAccountWarningTitle = "Warning<br>"
+lastAccountWarningMessage = "In order to use the launcher you must be logged into at least one account.<br><br>Are you sure you want to remove this account?"
+confirmButton = "Remove"
 cancelButton = "Cancel"
 
 [js.settings.authAccountPopulate]
@@ -247,7 +254,7 @@ username = "Username"
 uuid = "UUID"
 selectAccount = "Select Account"
 selectedAccount = "Selected Account ✓"
-logout = "Log Out"
+logout = "Remove"
 
 [js.settings.dropinMods]
 removeButton = "Remove"
