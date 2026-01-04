@@ -18,6 +18,6 @@ sourceGithubLink = "https://github.com/SwagSteve/MCT-Launcher"
 supportLink = "https://github.com/SwagSteve/MCT-Launcher/issues"
 
 [ejs.welcome]
-welcomeHeader = "WELCOME TO MCT"
-welcomeDescription = ""
+welcomeHeader = "Welcome to the MCT Launcher!"
+welcomeDescription = "Press Continue to get started..."
 welcomeDescCTA = ""
