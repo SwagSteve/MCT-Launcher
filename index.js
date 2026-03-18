@@ -144,21 +144,20 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
     })
 
     msftAuthWindow.webContents.on('did-navigate', (_, uri) => {
-        if (uri.startsWith(REDIRECT_URI_PREFIX)) {
-            let queries = uri.substring(REDIRECT_URI_PREFIX.length).split('#', 1).toString().split('&')
-            let queryMap = {}
+    if (uri.startsWith(REDIRECT_URI_PREFIX)) {
+        const parsedUrl = new URL(uri)
+        const queryMap = {}
 
-            queries.forEach(query => {
-                const [name, value] = query.split('=')
-                queryMap[name] = decodeURI(value)
-            })
-
-            ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess)
-
-            msftAuthSuccess = true
-            msftAuthWindow.close()
-            msftAuthWindow = null
+        for (const [name, value] of parsedUrl.searchParams.entries()) {
+            queryMap[name] = value
         }
+
+        ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.SUCCESS, queryMap, msftAuthViewSuccess)
+
+        msftAuthSuccess = true
+        msftAuthWindow.close()
+        msftAuthWindow = null
+    }
     })
 
     msftAuthWindow.removeMenu()
