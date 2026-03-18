@@ -4,3 +4,9 @@
 # 
 
 <p align="center">Join the event server without worrying about installing Java, Fabric, or any mods. We'll handle all of that for you.</p>
+<br>
+<br>
+
+<h1 align="center">Showcase</h1>
+
+![Alt text](github_assets/showcase.png?raw=true)
