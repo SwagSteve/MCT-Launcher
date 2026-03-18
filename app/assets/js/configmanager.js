@@ -86,7 +86,11 @@ const DEFAULT_CONFIG = {
         },
         launcher: {
             allowPrerelease: false,
-            dataDirectory: dataPath
+            dataDirectory: dataPath,
+            audio: {
+                muted: false,
+                volume: 0.5
+            }
         }
     },
     newsCache: {
@@ -790,4 +794,42 @@ exports.getAllowPrerelease = function(def = false){
  */
 exports.setAllowPrerelease = function(allowPrerelease){
     config.settings.launcher.allowPrerelease = allowPrerelease
+}
+
+/**
+ * Check if launcher music is muted.
+ * 
+ * @param {boolean} def Optional. If true, the default value will be returned.
+ * @returns {boolean} Whether launcher music is muted.
+ */
+exports.getMusicMuted = function(def = false){
+    return !def ? config.settings.launcher.audio.muted : DEFAULT_CONFIG.settings.launcher.audio.muted
+}
+
+/**
+ * Set whether launcher music is muted.
+ * 
+ * @param {boolean} muted Whether launcher music should be muted.
+ */
+exports.setMusicMuted = function(muted){
+    config.settings.launcher.audio.muted = muted
+}
+
+/**
+ * Get the launcher music volume.
+ * 
+ * @param {boolean} def Optional. If true, the default value will be returned.
+ * @returns {number} The launcher music volume from 0 to 1.
+ */
+exports.getMusicVolume = function(def = false){
+    return !def ? config.settings.launcher.audio.volume : DEFAULT_CONFIG.settings.launcher.audio.volume
+}
+
+/**
+ * Set the launcher music volume.
+ * 
+ * @param {number} volume The launcher music volume from 0 to 1.
+ */
+exports.setMusicVolume = function(volume){
+    config.settings.launcher.audio.volume = Math.max(0, Math.min(1, Number(volume)))
 }

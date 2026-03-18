@@ -4273,3 +4273,118 @@ input:checked + .toggleSwitchSlider:before {
     -ms-interpolation-mode: nearest-neighbor;
 }
 
+
+
+/* Launcher music control */
+#launcherAudioMediaContainer {
+    position: relative;
+}
+
+#launcherAudioControl {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#launcherAudioPopover {
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%) translateX(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 118px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 0 18px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#launcherAudioControl:hover #launcherAudioPopover,
+#launcherAudioControl:focus-within #launcherAudioPopover,
+#launcherAudioControl[open] #launcherAudioPopover {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
+}
+
+#launcherVolumeSlider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    outline: none;
+}
+
+#launcherVolumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+}
+
+#launcherAudioButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 20px;
+}
+
+#launcherAudioSVG {
+    width: 25px;
+    height: 12px;
+    transition: 0.25s ease;
+}
+
+#launcherAudioButton:hover #launcherAudioSVG,
+#launcherAudioButton:focus #launcherAudioSVG,
+#launcherAudioButton:active #launcherAudioSVG,
+#launcherAudioControl:hover #launcherAudioSVG,
+#launcherAudioControl:focus-within #launcherAudioSVG,
+#launcherAudioControl[open] #launcherAudioSVG {
+    width: 25px;
+    height: 20px;
+}
+
+#launcherAudioSVG .speakerBase,
+#launcherAudioSVG .speakerWave,
+#launcherAudioSVG .speakerMute {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#launcherAudioSVG .speakerBase {
+    fill: rgba(255, 255, 255, 0.9);
+    stroke: none;
+}
+
+#launcherAudioSVG .speakerMute {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#launcherAudioButton[muted] #launcherAudioSVG .speakerWave {
+    opacity: 0;
+}
+
+#launcherAudioButton[muted] #launcherAudioSVG .speakerMute {
+    opacity: 1;
+}

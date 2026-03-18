@@ -40,6 +40,9 @@ let currentView
  */
 function switchView(current, next, currentFadeTime = 500, nextFadeTime = 500, onCurrentFade = () => {}, onNextFade = () => {}){
     currentView = next
+    if(typeof window !== 'undefined' && typeof window.syncLauncherMusicForView === 'function'){
+        window.syncLauncherMusicForView(next.replace('#', '').replace('Container', ''))
+    }
     $(`${current}`).fadeOut(currentFadeTime, async () => {
         await onCurrentFade()
         $(`${next}`).fadeIn(nextFadeTime, async () => {
@@ -107,12 +110,18 @@ async function showMainUI(data){
         } else {
             if(isLoggedIn){
                 currentView = VIEWS.landing
+                if(typeof window !== 'undefined' && typeof window.syncLauncherMusicForView === 'function'){
+                    window.syncLauncherMusicForView('landing')
+                }
                 $(VIEWS.landing).fadeIn(1000)
             } else {
                 loginOptionsCancelEnabled(false)
                 loginOptionsViewOnLoginSuccess = VIEWS.landing
                 loginOptionsViewOnLoginCancel = VIEWS.loginOptions
                 currentView = VIEWS.loginOptions
+                if(typeof window !== 'undefined' && typeof window.syncLauncherMusicForView === 'function'){
+                    window.syncLauncherMusicForView('loginOptions')
+                }
                 $(VIEWS.loginOptions).fadeIn(1000)
             }
         }
