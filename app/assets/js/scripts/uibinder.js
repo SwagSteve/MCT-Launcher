@@ -132,7 +132,7 @@ async function showMainUI(data){
             })
         }, 250)
         
-    }, 750)
+    }, 3000)
     // Disable tabbing to the news container.
     safeInitNews().then(() => {
         $('#newsContainer *').attr('tabindex', '-1')
@@ -154,7 +154,7 @@ function showFatalStartupError(){
             })
             toggleOverlay(true)
         })
-    }, 750)
+    }, 3000)
 }
 
 /**

@@ -11,6 +11,7 @@
                     <button class="settingsNavItem" rSc="settingsTabMods"><%- lang('settings.navMods') %></button>
                     <button class="settingsNavItem" rSc="settingsTabJava"><%- lang('settings.navJava') %></button>
                     <button class="settingsNavItem" rSc="settingsTabLauncher"><%- lang('settings.navLauncher') %></button>
+                    <button class="settingsNavItem" rSc="settingsTabAudio">Audio</button>
                     <div class="settingsNavSpacer"></div>
                     <button class="settingsNavItem" rSc="settingsTabAbout"><%- lang('settings.navAbout') %></button>
                     <button class="settingsNavItem" rSc="settingsTabUpdate" id="settingsNavUpdate"><%- lang('settings.navUpdates') %></button>
@@ -286,6 +287,31 @@
                     </div>
                 </div>
                 <div class="settingsFileSelDesc"><%- lang('settings.dataDirectoryDesc') %></div>
+            </div>
+        </div>
+        <div id="settingsTabAudio" class="settingsTab" style="display: none;">
+            <div class="settingsTabHeader">
+                <span class="settingsTabHeaderText">Audio</span>
+                <span class="settingsTabHeaderDesc">Control launcher music volume and mute.</span>
+            </div>
+            <div class="settingsAudioCard">
+                <div class="settingsAudioCardHeader">
+                    <span class="settingsFieldTitle">Launcher Music</span>
+                    <span class="settingsFieldDesc">Adjust volume or mute the launcher music globally.</span>
+                </div>
+                <div id="settingsAudioControl">
+                    <button id="settingsAudioButton" class="mediaButton" aria-label="Toggle launcher music from settings">
+                        <svg id="settingsAudioSVG" class="mediaSVG" viewBox="0 0 24 24" aria-hidden="true">
+                            <path class="speakerBase" d="M3 9v6h4l5 4V5L7 9H3z"></path>
+                            <path class="speakerWave wave1" d="M16 8.82a4.5 4.5 0 0 1 0 6.36"></path>
+                            <path class="speakerWave wave2" d="M18.83 5.99a8.5 8.5 0 0 1 0 12.02"></path>
+                            <path class="speakerMute" d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    <div id="settingsAudioSliderWrap">
+                        <input id="settingsVolumeSlider" type="range" min="0" max="100" value="20" aria-label="Launcher music volume in settings">
+                    </div>
+                </div>
             </div>
         </div>
         <div id="settingsTabAbout" class="settingsTab" style="display: none;">

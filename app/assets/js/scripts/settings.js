@@ -1285,34 +1285,31 @@ function bindRangeSlider(){
 
         updateRangedSlider(v, value, ((value-sliderMeta.min)/sliderMeta.step)*sliderMeta.inc)
 
-        // The magic happens when we click on the track.
-        track.onmousedown = (e) => {
+        const updateFromPointer = (e) => {
+            const rect = v.getBoundingClientRect()
+            if(rect.width <= 0){
+                return
+            }
 
-            // Stop moving the track on mouse up.
-            document.onmouseup = (e) => {
+            const centerX = e.clientX - rect.left
+            const clampedCenterX = Math.min(Math.max(centerX, 0), rect.width)
+            const perc = (clampedCenterX / rect.width) * 100
+            const notch = Number((perc / sliderMeta.inc).toFixed(0)) * sliderMeta.inc
+
+            updateRangedSlider(v, sliderMeta.min + (sliderMeta.step * (notch / sliderMeta.inc)), notch)
+        }
+
+        track.onmousedown = (e) => {
+            e.preventDefault()
+            updateFromPointer(e)
+
+            document.onmouseup = () => {
                 document.onmousemove = null
                 document.onmouseup = null
             }
 
-            // Move slider according to the mouse position.
             document.onmousemove = (e) => {
-
-                // Distance from the beginning of the bar in pixels.
-                const diff = e.pageX - v.offsetLeft - track.offsetWidth/2
-                
-                // Don't move the track off the bar.
-                if(diff >= 0 && diff <= v.offsetWidth-track.offsetWidth/2){
-
-                    // Convert the difference to a percentage.
-                    const perc = (diff/v.offsetWidth)*100
-                    // Calculate the percentage of the closest notch.
-                    const notch = Number(perc/sliderMeta.inc).toFixed(0)*sliderMeta.inc
-
-                    // If we're close to that notch, stick to it.
-                    if(Math.abs(perc-notch) < sliderMeta.inc/2){
-                        updateRangedSlider(v, sliderMeta.min+(sliderMeta.step*(notch/sliderMeta.inc)), notch)
-                    }
-                }
+                updateFromPointer(e)
             }
         }
     }) 
@@ -1348,7 +1345,7 @@ function updateRangedSlider(element, value, notch){
     let cancelled = !element.dispatchEvent(event)
 
     if(!cancelled){
-        track.style.left = notch + '%'
+        track.style.left = `calc(${notch}% - ${track.offsetWidth / 2}px)`
         bar.style.width = notch + '%'
     } else {
         element.setAttribute('value', oldVal)

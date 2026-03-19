@@ -930,6 +930,10 @@ async function dlAsync(login = true) {
             // Build Minecraft process.
             proc = pb.build()
 
+            if(typeof window.pauseLauncherMusicForGame === 'function'){
+                window.pauseLauncherMusicForGame()
+            }
+
             // While the Minecraft process is running, disable the play button.
             mctSetGameRunning(true)
 
@@ -950,6 +954,9 @@ async function dlAsync(login = true) {
                     proc = null
                     mctSetGameRunning(false)
                     toggleLaunchArea(false)
+                    if(typeof window.resumeLauncherMusicAfterGame === 'function'){
+                        window.resumeLauncherMusicAfterGame()
+                    }
                 })
             } else {
                 // Always clear process state when the game closes (even without Discord RPC).
@@ -958,6 +965,9 @@ async function dlAsync(login = true) {
                     proc = null
                     mctSetGameRunning(false)
                     toggleLaunchArea(false)
+                    if(typeof window.resumeLauncherMusicAfterGame === 'function'){
+                        window.resumeLauncherMusicAfterGame()
+                    }
                 })
             }
 

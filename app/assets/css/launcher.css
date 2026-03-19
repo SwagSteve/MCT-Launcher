@@ -1090,6 +1090,7 @@ body {
     padding-top: 4%;
     height: 100%;
     width: 25%;
+    min-height: 0;
     box-sizing: border-box;
 }
 
@@ -1098,6 +1099,7 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 /* Navigation header styles. */
@@ -1112,7 +1114,8 @@ body {
 
 /* Navigation items outer container. */
 #settingsNavItemsContainer {
-    height: 85%;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     justify-content: center;
     box-sizing: border-box;
@@ -1123,7 +1126,7 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    position: relative;
+    min-height: 0;
 }
 
 /* Navigation item shared styles. */
@@ -1156,8 +1159,8 @@ body {
 
 /* Content container for the done button. */
 #settingsNavContentBottom {
-    position: absolute;
-    top: 65%;
+    margin-top: auto;
+    padding-top: 18px;
 }
 
 /* Settings navigational divider. */
@@ -4387,4 +4390,103 @@ input:checked + .toggleSwitchSlider:before {
 
 #launcherAudioButton[muted] #launcherAudioSVG .speakerMute {
     opacity: 1;
+}
+
+
+.settingsAudioCard {
+    margin-top: 22px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    width: min(100%, 860px);
+    max-width: calc(100% - 24px);
+    box-sizing: border-box;
+}
+
+.settingsAudioCardHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+    max-width: 100%;
+}
+
+#settingsAudioControl {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: min(100%, 760px);
+    max-width: 100%;
+}
+
+#settingsAudioButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+}
+
+#settingsAudioSVG {
+    width: 25px;
+    height: 20px;
+}
+
+#settingsAudioSVG .speakerBase,
+#settingsAudioSVG .speakerWave,
+#settingsAudioSVG .speakerMute {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#settingsAudioSVG .speakerBase {
+    fill: rgba(255, 255, 255, 0.9);
+    stroke: none;
+}
+
+#settingsAudioSVG .speakerMute {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#settingsAudioButton[muted] #settingsAudioSVG .speakerWave {
+    opacity: 0;
+}
+
+#settingsAudioButton[muted] #settingsAudioSVG .speakerMute {
+    opacity: 1;
+}
+
+#settingsAudioSliderWrap {
+    width: min(100%, 720px);
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+#settingsVolumeSlider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    outline: none;
+}
+
+#settingsVolumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+    cursor: pointer;
 }

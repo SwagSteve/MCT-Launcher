@@ -89,7 +89,7 @@ const DEFAULT_CONFIG = {
             dataDirectory: dataPath,
             audio: {
                 muted: false,
-                volume: 0.5
+                volume: 0.2
             }
         }
     },

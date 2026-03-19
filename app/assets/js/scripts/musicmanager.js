@@ -1,7 +1,6 @@
 (() => {
     const path = require('path')
-    const { pathToFileURL } = require('url')
-    const fs = require('fs')
+        const fs = require('fs')
     const ConfigManager = require('./assets/js/configmanager')
 
     const TRACKS = {
@@ -37,10 +36,11 @@
     let currentTrackKey = null
     let currentTrackSrc = null
     let currentLoopStart = 0
-    let lastNonZeroVolume = Math.max(0.05, Number(ConfigManager.getMusicVolume() || 0.5))
+    let lastNonZeroVolume = Math.max(0.05, Number(ConfigManager.getMusicVolume() || 0.2))
     let hoverHideTimeout = null
     let sliderDragActive = false
     let currentObjectUrl = null
+    let musicPausedForGame = false
 
 function getMimeTypeForAudio(filePath){
     const ext = path.extname(filePath).toLowerCase()
@@ -79,6 +79,46 @@ function resolveTrackSource(trackSrc){
     }
 }
 
+
+    function createObjectUrlFromAsset(relativePath){
+        const resolvedSrc = resolveTrackSource(relativePath)
+        if(!resolvedSrc){
+            return null
+        }
+        return resolvedSrc
+    }
+
+    function playIntroSoundOnce(){
+        if(window.__launcherIntroSoundPlayed){
+            return
+        }
+        window.__launcherIntroSoundPlayed = true
+
+        const introSrc = createObjectUrlFromAsset('assets/sfx/logo.wav')
+        if(!introSrc){
+            return
+        }
+
+        const introAudio = document.createElement('audio')
+        introAudio.preload = 'auto'
+        introAudio.volume = ConfigManager.getMusicMuted() ? 0 : Number(ConfigManager.getMusicVolume() || 0.2)
+        introAudio.src = introSrc
+
+        const cleanup = () => {
+            try {
+                window.URL.revokeObjectURL(introSrc)
+            } catch (e) {}
+        }
+
+        introAudio.addEventListener('ended', cleanup, { once: true })
+        introAudio.addEventListener('error', cleanup, { once: true })
+
+        introAudio.play().catch((e) => {
+            console.warn('Launcher intro sound playback was blocked.', e)
+            cleanup()
+        })
+    }
+
     function ensureAudio(){
     if(audio != null) return audio
 
@@ -114,10 +154,17 @@ function resolveTrackSource(trackSrc){
         a.muted = muted
         a.volume = muted ? 0 : volume
 
-        const muteBtn = document.getElementById('launcherAudioButton')
-        const slider = document.getElementById('launcherVolumeSlider')
+        const muteButtons = [
+            document.getElementById('launcherAudioButton'),
+            document.getElementById('settingsAudioButton')
+        ]
+        const sliders = [
+            document.getElementById('launcherVolumeSlider'),
+            document.getElementById('settingsVolumeSlider')
+        ]
 
-        if(muteBtn){
+        for(const muteBtn of muteButtons){
+            if(!muteBtn) continue
             if(muted){
                 muteBtn.setAttribute('muted', '')
             } else {
@@ -125,8 +172,10 @@ function resolveTrackSource(trackSrc){
             }
         }
 
-        if(slider && document.activeElement !== slider){
-            slider.value = Math.round(volume * 100)
+        for(const slider of sliders){
+            if(slider && document.activeElement !== slider){
+                slider.value = Math.round(volume * 100)
+            }
         }
     }
 
@@ -259,6 +308,15 @@ function resolveTrackSource(trackSrc){
             openAudioPopover(control)
         })
 
+        bindVolumeSlider(slider, () => openAudioPopover(control))
+
+        applyVolumeState()
+    }
+
+
+    function bindVolumeSlider(slider, onInteract){
+        if(!slider) return
+
         slider.addEventListener('input', (e) => {
             const volume = Number(e.target.value) / 100
             if(volume > 0){
@@ -268,17 +326,64 @@ function resolveTrackSource(trackSrc){
             ConfigManager.setMusicMuted(volume <= 0)
             ConfigManager.save()
             applyVolumeState()
-            openAudioPopover(control)
+            if(typeof onInteract === 'function'){
+                onInteract()
+            }
+        })
+    }
+
+    function initSettingsAudioControls(){
+        const muteBtn = document.getElementById('settingsAudioButton')
+        const slider = document.getElementById('settingsVolumeSlider')
+
+        if(!muteBtn || !slider) return
+
+        muteBtn.addEventListener('click', (e) => {
+            e.preventDefault()
+            toggleLauncherMute()
         })
 
+        bindVolumeSlider(slider)
         applyVolumeState()
     }
 
+    function pauseLauncherMusicForGame(){
+    const a = ensureAudio()
+    musicPausedForGame = !!(a && !a.paused)
+
+    try {
+        a.pause()
+    } catch (e) {
+        console.warn('Failed to pause launcher music for game.', e)
+    }
+}
+
+async function resumeLauncherMusicAfterGame(){
+    if(!musicPausedForGame) return
+    musicPausedForGame = false
+
+    if(ConfigManager.getMusicMuted()) return
+
+    const a = ensureAudio()
+    if(!currentTrackSrc) return
+
+    try {
+        await a.play()
+    } catch (e) {
+        console.warn('Failed to resume launcher music after game.', e)
+    }
+}
+
+    window.syncLauncherMusicForView = syncLauncherMusicForView
+    window.pauseLauncherMusicForGame = pauseLauncherMusicForGame
+    window.resumeLauncherMusicAfterGame = resumeLauncherMusicAfterGame
     window.syncLauncherMusicForView = syncLauncherMusicForView
 
     document.addEventListener('readystatechange', function(){
         if(document.readyState === 'complete'){
             initLauncherAudioControls()
+            initSettingsAudioControls()
+            playIntroSoundOnce()
             if(typeof getCurrentView === 'function' && getCurrentView()){
                 syncLauncherMusicForView(getCurrentView())
             }
