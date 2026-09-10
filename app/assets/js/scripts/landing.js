@@ -226,7 +226,7 @@ function updateSelectedAccount(authUser){
         if(authUser.uuid != null){
             const mctRenderType = mctPickRandomRenderType()
             document.getElementById('avatarContainer').dataset.mctRenderType = mctRenderType
-            document.getElementById('avatarContainer').style.backgroundImage = `url('https://starlightskins.lunareclipse.studio/render/${mctRenderType}/${authUser.uuid}/full')`
+            document.getElementById('avatarContainer').style.backgroundImage = `url('https://starlight.lunareclipse.studio/api/v1/render/${mctRenderType}/${authUser.uuid}/full')`
         }
     }
 

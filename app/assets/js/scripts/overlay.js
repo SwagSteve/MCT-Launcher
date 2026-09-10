@@ -305,7 +305,7 @@ function populateAccountListings(){
     let htmlString = ''
     for(let i=0; i<accounts.length; i++){
         htmlString += `<button class="accountListing" uuid="${accounts[i].uuid}" ${i===0 ? 'selected' : ''}>
-            <img src="https://starlightskins.lunareclipse.studio/render/dungeons/${accounts[i].uuid}/full">
+            <img src="https://starlight.lunareclipse.studio/api/v1/render/dungeons/${accounts[i].uuid}/full">
             <div class="accountListingName">${accounts[i].displayName}</div>
         </button>`
     }

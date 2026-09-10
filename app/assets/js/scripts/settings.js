@@ -650,7 +650,7 @@ function populateAuthAccounts(){
 
         const accHtml = `<div class="settingsAuthAccount" uuid="${acc.uuid}" ${selectedUUID === acc.uuid ? 'selectedaccount' : ''}>
             <div class="settingsAuthAccountLeft">
-                <img class="settingsAuthAccountImage" alt="${acc.displayName}" src="https://starlightskins.lunareclipse.studio/render/sleeping/${acc.uuid}/full">
+                <img class="settingsAuthAccountImage" alt="${acc.displayName}" src="https://starlight.lunareclipse.studio/api/v1/render/sleeping/${acc.uuid}/full">
             </div>
             <div class="settingsAuthAccountRight">
                 <div class="settingsAuthAccountDetails">
